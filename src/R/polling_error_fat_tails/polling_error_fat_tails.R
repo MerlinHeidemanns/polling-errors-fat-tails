@@ -1,8 +1,9 @@
 library(boot)
 library(cmdstanr)
 library(tidyverse)
-df <- read_csv("data/us_input/polling_error/polls_pres_dataset_00_20.csv")
-results <- read_csv("data/us_background/potus_results_76_20.csv") %>%
+library(loo)
+df <- read_csv("dta/polls_pres_dataset_00_20.csv")
+results <- read_csv("dta/potus_results_76_20.csv") %>%
   left_join(df %>% distinct(state), by = c("state_po" = "state"))
 states_2020_ordered <- results %>%
   filter(year == 2020) %>%
@@ -17,10 +18,10 @@ results_2020 <- results %>%
   left_join(df %>% distinct(state, State), by = c("state_po" = "state"))
 states_2020_ordered_lower <- results_2020 %>% filter(!is.na(State)) %>%
   arrange(finalTwoPartyVSDemocratic) %>% pull(State)
-us_regions <- read_csv("data/us_input/polling_error/us census bureau regions and divisions.csv")
+us_regions <- read_csv("dta/us census bureau regions and divisions.csv")
 ###############################################################################
 ## Model for scales
-m <- file.path("code/stan/obs/input/polling_error/polling_error_fat_tails",
+m <- file.path("src/stan/polling_error_fat_tails",
                "polling_error_fat_tails_student_t.stan")
 mod <- cmdstan_model(m)
 state_abb <- df %>%
@@ -52,7 +53,7 @@ indexes <- data.frame(x = 1:300,
 )
 
 loo_list <- list()
-for (i in seq(4, 30, 2)){
+for (i in seq(2, 30, 2)){
   print(i)
   data_list <- list(
     N = nrow(df),
@@ -72,13 +73,13 @@ for (i in seq(4, 30, 2)){
     parallel_chains = 4,
     refresh = 0
   )
-  loo_list[[paste0("nu", i)]] <- loo(fit$draws("log_lik"))
+  loo_list[[paste0("nu", i)]] <- fit$loo()
 
 }
 
 
-
-m_normal <- file.path("code/stan/obs/input/polling_error/polling_error_fat_tails",
+## Normal model
+m_normal <- file.path("src/stan/polling_error_fat_tails",
                "polling_error_fat_tails_normal.stan")
 mod_normal <- cmdstan_model(m_normal)
 data_list <- list(
@@ -98,10 +99,24 @@ fit_normal <- mod_normal$sample(
   parallel_chains = 4,
   refresh = 0
 )
-loo_list[["normal"]] <- loo(fit_normal$draws("log_lik"))
+loo_list[["normal"]] <- fit_normal$loo()
 
+## Compare all
 loo_model_weights(loo_list)
+weight_frame <- data.frame(
+  model_name = rownames(as.matrix(loo_model_weights(loo_list, method = "pseudobma"))),
+  weight = as.matrix(loo_model_weights(loo_list, method = "pseudobma"))
+) %>%
+  mutate(nu = as.integer(str_remove(model_name, "[^\\d]+")))
+write_rds(weight_frame, "output/weight_frame.Rds")
 
+
+
+
+
+
+
+## Compare individually against normal
 for (i in seq(2, 30, 2)){
   loo_list_compare <- list(
     loo_list[[paste0("nu", i)]],
@@ -110,7 +125,7 @@ for (i in seq(2, 30, 2)){
   print(loo_model_weights(loo_list_compare))
 }
 
-
+fit_normal$loo()
 
 
 

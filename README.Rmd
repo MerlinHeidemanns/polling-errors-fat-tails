@@ -6,6 +6,8 @@ output: github_document
 ```{r setup, echo = FALSE, message=FALSE, warning=FALSE}
 library(LaplacesDemon)
 library(ggplot2)
+library(readr)
+library(dplyr)
 ```
 
 To me it always felt like "fat tailed" errors was just another buzzword as if throwing a student-t distribution with $\nu = 7$ would magically solve your problem of polling errors that put too little probability on errors that are large. So here a test with some data.
@@ -15,6 +17,7 @@ To estimate polling errors I use the generic model
 $$
 y_i \sim \text{Binomial}(\text{logit}^{-1}(n_i, \alpha_{s[i], t[i]} + \xi_{s[i], t[i]}))
 $$
+
 for state-polls three weeks prior to the Presidential election. $i$ indexes polls and $y$ refers to the count of respondents indicating a Democratic vote intention and $n$ the number of respondents indicating the intention to vote for either major party. $\alpha_{s[i], t[i]}$ is the election result on the logit scale for state $s$ and election $t$ for poll $i$. This is the vectorized notation from Gelman and Hill (2006). $\xi$ is the polling error, i.e. the difference between the election outcome and the poll estimate. Now why do this rather than take the average of pre-election poll polling errors. Well, sampling variation and we all generally love propagating uncertainty.
 
 Anyway, the question is where does $\xi$ come from. The candidates are either the student-t distribution with some $\nu$ and $\sigma$ or the normal distribution with some $\sigma$. Let's fix $\sigma = 0.1$, i.e. encoding the belief that 68\% of the time the polling error falls within $\pm 14$ percentage points. Overly wide maybe but then again there are the Hawaii's of this world so let's leave it like that. Then we can use Stacking (i.e. a fancy Bayesian Model Averaging approach that works through the predictive distribution) to compare multiple models specifically those with
@@ -22,11 +25,13 @@ Anyway, the question is where does $\xi$ come from. The candidates are either th
 $$
 \xi \sim t_\text{student}(\nu, 0, 0.1)
 $$
+
 and those with 
 
 $$
 \xi \sim \mathcal{N}(0, 0.1)
 $$
+
 We can vary $\nu$ where bigger means less wide tails. For comparison, in blue $\nu = 2$ and in red the normal.
 
 ```{r, echo=FALSE, results = TRUE, warning=FALSE, message=FALSE}
@@ -44,4 +49,58 @@ ggplot(data = dist, aes(x = val, fill = kind)) +
         axis.text.y = element_blank(),
         legend.title = element_blank())
 ```
+
+The fitted model in Stan then looks like this:
+
+```{c++}
+data {
+  int N;
+  int S; // State
+  int T; // Year
+  int x[N];
+  int y[N];
+  int n[N];
+  vector[N] outcome;
+  int corr_x[S * T];
+  real nu;
+}
+transformed data {
+  vector[N] logit_outcome;
+  logit_outcome = logit(outcome);
+}
+parameters {
+  vector[S * T] xi_student_t;
+}
+model {
+  xi_student_t ~ student_t(nu,0, 0.1);
+  y ~ binomial_logit(n, logit_outcome + xi_student_t[x]);
+}
+generated quantities {
+  vector[N] log_lik;
+  for (ii in 1:N){
+    log_lik[ii] = binomial_logit_lpmf(y[ii] | n[ii], logit_outcome[ii] + xi_student_t[x[ii]]);
+  }
+}
+```
+
+
+
+
+
+
+When this is run for varying values of $\nu$, we see that BMA suggests that a fat tailed distribution provides a better fit to the data.
+
+```{r, echo = FALSE, results = TRUE, warning=FALSE, message=FALSE}
+weight_frame <- read_rds("output/weight_frame.Rds")
+ggplot(data = weight_frame %>%
+         filter(model_name != "normal"), aes(x = nu, y = weight)) +
+  geom_point() +
+  scale_x_continuous(breaks = seq(2, 30, 2)) +
+  theme_light() + 
+  geom_hline(aes(yintercept = weight_frame %>%
+                   filter(model_name == "normal") %>%
+                   pull(weight)), linetype = 2, size = 0.5)
+```
+
+
 
