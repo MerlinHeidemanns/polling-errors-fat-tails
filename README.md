@@ -27,10 +27,9 @@ either the student-t distribution with some *ν* and *σ* or the normal
 distribution with some *σ*. Let’s fix *σ* = 0.1, i.e. encoding the
 belief that 68% of the time the polling error falls within  ± 14
 percentage points. Overly wide maybe but then again there are the
-Hawaii’s of this world so let’s leave it like that. Then we can use
-Stacking (i.e. a fancy Bayesian Model Averaging approach that works
-through the predictive distribution) to compare multiple models
-specifically those with
+Hawaii’s of this world so let’s leave it like that. Then we can use some
+Bayesian Model Averaging to compare multiple models specifically those
+with
 
 *ξ* ∼ *t*<sub>student</sub>(*ν*, 0, 0.1)
 
