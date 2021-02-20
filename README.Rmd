@@ -1,6 +1,9 @@
 ---
 title: "Untitled"
-output: github_document
+html_document:
+    keep_md: true
+  md_document:
+    variant: markdown_github
 ---
 
 ```{r setup, include=FALSE}
