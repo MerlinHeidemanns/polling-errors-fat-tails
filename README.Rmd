@@ -3,28 +3,45 @@ title: "Untitled"
 output: github_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, echo = FALSE, message=FALSE, warning=FALSE}
+library(LaplacesDemon)
+library(ggplot2)
 ```
 
-## GitHub Documents
+To me it always felt like "fat tailed" errors was just another buzzword as if throwing a student-t distribution with $\nu = 7$ would magically solve your problem of polling errors that put too little probability on errors that are large. So here a test with some data.
 
-This is an R Markdown format used for publishing markdown documents to GitHub. When you click the **Knit** button all R code chunks are run and a markdown file (.md) suitable for publishing to GitHub is generated.
+To estimate polling errors I use the generic model
 
-## Including Code
+$$
+y_i \sim \text{Binomial}(\text{logit}^{-1}(n_i, \alpha_{s[i], t[i]} + \xi_{s[i], t[i]}))
+$$
+for state-polls three weeks prior to the Presidential election. $i$ indexes polls and $y$ refers to the count of respondents indicating a Democratic vote intention and $n$ the number of respondents indicating the intention to vote for either major party. $\alpha_{s[i], t[i]}$ is the election result on the logit scale for state $s$ and election $t$ for poll $i$. This is the vectorized notation from Gelman and Hill (2006). $\xi$ is the polling error, i.e. the difference between the election outcome and the poll estimate. Now why do this rather than take the average of pre-election poll polling errors. Well, sampling variation and we all generally love propagating uncertainty.
 
-You can include R code in the document as follows:
+Anyway, the question is where does $\xi$ come from. The candidates are either the student-t distribution with some $\nu$ and $\sigma$ or the normal distribution with some $\sigma$. Let's fix $\sigma = 0.1$, i.e. encoding the belief that 68\% of the time the polling error falls within $\pm 14$ percentage points. Overly wide maybe but then again there are the Hawaii's of this world so let's leave it like that. Then we can use Stacking (i.e. a fancy Bayesian Model Averaging approach that works through the predictive distribution) to compare multiple models specifically those with
 
-```{r cars}
-summary(cars)
+$$
+\xi \sim t_\text{student}(\nu, 0, 0.1)
+$$
+and those with 
+
+$$
+\xi \sim \mathcal{N}(0, 0.1)
+$$
+We can vary $\nu$ where bigger means less wide tails. For comparison, in blue $\nu = 2$ and in red the normal.
+
+```{r, echo=FALSE, results = TRUE, warning=FALSE, message=FALSE}
+dist <- data.frame(
+  val = c(rst(100000, 0, 0.1, 2), rnorm(100000, 0, 0.1)),
+  kind = c(rep("student_t (nu = 2)", 100000), rep("normal", 100000))
+)
+ggplot(data = dist, aes(x = val, fill = kind)) + 
+  geom_histogram(position = "identity", alpha = 0.3, bins = 60) +
+  xlim(c(-0.5, 0.5)) +
+  theme_light() + 
+  labs(x = "xi (prior)") +
+  theme(axis.title.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank(),
+        legend.title = element_blank())
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
