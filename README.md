@@ -42,6 +42,8 @@ blue *ν* = 2 and in red the normal.
 
 ![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
 
+### Code
+
 The fitted model in Stan then looks like this:
 
 ``` {c++}
@@ -75,9 +77,13 @@ generated quantities {
 }
 ```
 
-When this is run for varying values of *ν*, we see that BMA suggests
-that a fat tailed distribution provides a better fit to the data. The
-dashed line is the weight for the normal model.
+### Results
+
+As data I use state-level polls for the last three weeks prior to the
+election for all Presidential elections from 2000 to 2020 which ends up
+being around 2200 polls. When this is run for varying values of *ν*, we
+see that BMA suggests that a fat tailed distribution provides a better
+fit to the data. The dashed line is the weight for the normal model.
 
 ![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
@@ -85,6 +91,8 @@ When *σ* is given a prior distribution instead of being given as fixed,
 the results look like this:
 
 ![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+
+### Conclusion
 
 So to an extent there may be something to distributions with fatter
 tails being better able to fit polling errors. On the other hand, that

@@ -50,6 +50,8 @@ ggplot(data = dist, aes(x = val, fill = kind)) +
         legend.title = element_blank())
 ```
 
+### Code
+
 The fitted model in Stan then looks like this:
 
 ```{c++}
@@ -83,12 +85,9 @@ generated quantities {
 }
 ```
 
+### Results
 
-
-
-
-
-When this is run for varying values of $\nu$, we see that BMA suggests that a fat tailed distribution provides a better fit to the data. The dashed line is the weight for the normal model.
+As data I use state-level polls for the last three weeks prior to the election for all Presidential elections from 2000 to 2020 which ends up being around 2200 polls. When this is run for varying values of $\nu$, we see that BMA suggests that a fat tailed distribution provides a better fit to the data. The dashed line is the weight for the normal model.
 
 ```{r, echo = FALSE, results = TRUE, warning=FALSE, message=FALSE}
 weight_frame <- read_rds("output/weight_frame.Rds")
@@ -115,5 +114,7 @@ ggplot(data = weight_frame %>%
                    filter(model_name == "normal") %>%
                    pull(weight)), linetype = 2, size = 0.5)
 ```
+
+### Conclusion
 
 So to an extent there may be something to distributions with fatter tails being better able to fit polling errors. On the other hand, that pattern might have also changed over time with each time point well fit by a normal with a different standard deviation which would require a bit more modeling effort to find out.
