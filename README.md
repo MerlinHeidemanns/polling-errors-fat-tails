@@ -1,4 +1,4 @@
-Untitled
+Polling errors and fat tails
 ================
 
 To me it always felt like “fat tailed” errors was just another buzzword
@@ -77,6 +77,18 @@ generated quantities {
 ```
 
 When this is run for varying values of *ν*, we see that BMA suggests
-that a fat tailed distribution provides a better fit to the data.
+that a fat tailed distribution provides a better fit to the data. The
+dashed line is the weight for the normal model.
 
 ![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+When *σ* is given a prior distribution instead of being given as fixed,
+the results look like this:
+
+![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+
+So to an extent there may be something to distributions with fatter
+tails being better able to fit polling errors. On the other hand, that
+pattern might have also changed over time with each time point well fit
+by a normal with a different standard deviation which would require a
+bit more modeling effort to find out.

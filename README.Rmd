@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Polling errors and fat tails"
 output: github_document
 ---
 
@@ -88,7 +88,7 @@ generated quantities {
 
 
 
-When this is run for varying values of $\nu$, we see that BMA suggests that a fat tailed distribution provides a better fit to the data.
+When this is run for varying values of $\nu$, we see that BMA suggests that a fat tailed distribution provides a better fit to the data. The dashed line is the weight for the normal model.
 
 ```{r, echo = FALSE, results = TRUE, warning=FALSE, message=FALSE}
 weight_frame <- read_rds("output/weight_frame.Rds")
@@ -102,5 +102,18 @@ ggplot(data = weight_frame %>%
                    pull(weight)), linetype = 2, size = 0.5)
 ```
 
+When $\sigma$ is given a prior distribution instead of being given as fixed, the results look like this:
 
+```{r, echo = FALSE, results = TRUE, warning=FALSE, message=FALSE}
+weight_frame <- read_rds("output/weight_frame_sigma.Rds")
+ggplot(data = weight_frame %>%
+         filter(model_name != "normal"), aes(x = nu, y = weight)) +
+  geom_point() +
+  scale_x_continuous(breaks = seq(2, 30, 2)) +
+  theme_light() + 
+  geom_hline(aes(yintercept = weight_frame %>%
+                   filter(model_name == "normal") %>%
+                   pull(weight)), linetype = 2, size = 0.5)
+```
 
+So to an extent there may be something to distributions with fatter tails being better able to fit polling errors. On the other hand, that pattern might have also changed over time with each time point well fit by a normal with a different standard deviation which would require a bit more modeling effort to find out.

@@ -1,5 +1,5 @@
 ## Purpose
-# Fit polling error models with sigma as data
+# Fit polling error models with sigma as parameter
 ## Libraries
 library(boot)
 library(cmdstanr)
@@ -8,8 +8,9 @@ library(loo)
 ## Load data
 df <- read_csv("dta/polls_pres_dataset_00_20.csv")
 ###############################################################################
+## Models with sigma allowed to vary
 m <- file.path("src/stan/polling_error_fat_tails",
-               "polling_error_fat_tails_student_t.stan")
+               "polling_error_fat_tails_student_t_sigma.stan")
 mod <- cmdstan_model(m)
 state_abb <- df %>%
   pull(state) %>%
@@ -26,16 +27,11 @@ df <- df %>%
          outcome = finalTwoPartyVSDemocratic / 100,
          n = floor((republican + democratic)/100 * numberOfRespondents),
          y = floor(democratic/100 * numberOfRespondents)) %>%
-  left_join(us_regions, by = c("state" = "State Code")) %>%
   left_join(data.frame(x = 1:300,
                        t = sort(rep(1:6, 50)),
                        s = rep(1:50, 6)))
 
-indexes <- data.frame(x = 1:300,
-                      t = sort(rep(1:6, 50)),
-                      s = rep(1:50, 6)
-)
-
+## Loop
 loo_list <- list()
 for (i in seq(2, 30, 2)){
   print(i)
@@ -47,7 +43,6 @@ for (i in seq(2, 30, 2)){
     y = df %>% pull(y),
     n = df %>% pull(n),
     outcome = df %>% pull(outcome),
-    corr_x = indexes %>% pull(x),
     nu = i
   )
   fit <- mod$sample(
@@ -60,11 +55,9 @@ for (i in seq(2, 30, 2)){
   loo_list[[paste0("nu", i)]] <- fit$loo()
 
 }
-
-
 ## Normal model
 m_normal <- file.path("src/stan/polling_error_fat_tails",
-               "polling_error_fat_tails_normal.stan")
+                      "polling_error_fat_tails_normal_sigma.stan")
 mod_normal <- cmdstan_model(m_normal)
 data_list <- list(
   N = nrow(df),
@@ -73,8 +66,7 @@ data_list <- list(
   x = df %>% pull(x),
   y = df %>% pull(y),
   n = df %>% pull(n),
-  outcome = df %>% pull(outcome),
-  corr_x = indexes %>% pull(x)
+  outcome = df %>% pull(outcome)
 )
 fit_normal <- mod_normal$sample(
   data = data_list,
@@ -84,20 +76,12 @@ fit_normal <- mod_normal$sample(
   refresh = 0
 )
 loo_list[["normal"]] <- fit_normal$loo()
-
 ## Compare all
-weights <- as.matrix(loo_model_weights(loo_list, method = "pseudobma"))
-weight_frame <- data.frame(
-  model_name = rownames(weights),
-  weight = weights
+weights_sigma <- as.matrix(loo_model_weights(loo_list, method = "pseudobma"))
+weight_frame_sigma <- data.frame(
+  model_name = rownames(weights_sigma),
+  weight = weights_sigma
 ) %>%
   mutate(nu = as.integer(str_remove(model_name, "[^\\d]+")))
-write_rds(weight_frame, "output/weight_frame.Rds")
-
-
-
-
-
-
-
+write_rds(weight_frame_sigma, "output/weight_frame_sigma.Rds")
 

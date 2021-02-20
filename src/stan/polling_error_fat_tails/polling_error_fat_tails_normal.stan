@@ -6,8 +6,6 @@ data {
   int y[N];
   int n[N];
   vector[N] outcome;
-
-  int corr_x[S * T];
 }
 transformed data {
   vector[N] logit_outcome;

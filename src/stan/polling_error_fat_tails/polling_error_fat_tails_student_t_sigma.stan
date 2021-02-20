@@ -14,9 +14,11 @@ transformed data {
 }
 parameters {
   vector[S * T] xi_student_t;
+  real<lower = 0> sigma;
 }
 model {
-  xi_student_t ~ student_t(nu,0, 0.1);
+  sigma ~ normal(0, 0.25);
+  xi_student_t ~ student_t(nu,0, sigma);
   y ~ binomial_logit(n, logit_outcome + xi_student_t[x]);
 }
 generated quantities {
