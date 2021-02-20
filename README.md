@@ -1,4 +1,4 @@
-Untitled
+Polling errors and fat tails
 ================
 
 To me it always felt like “fat tailed” errors was just another buzzword
